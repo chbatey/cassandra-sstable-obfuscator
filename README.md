@@ -1,6 +1,11 @@
+# SSTable Obfuscator
+
 A tool for taking Raw SS Tables (not snappy compressed) and obfuscating text fields.
 
-Only works for tables without clustering columns and where every field is of type text.
+**Very limited functionality so far**
+
+* Only works for tables without clustering columns
+* All fields must be text
 
 Example configuration:
 
