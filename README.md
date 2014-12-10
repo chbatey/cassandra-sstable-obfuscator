@@ -34,3 +34,12 @@ Possible values for the Obfuscation class are:
 You can implement your own by implementing the ObfuscationStrategy
 
 Once you have generated your SS tables you can import them to a new cluster using SS table loader.
+
+## To use it
+
+* Clone the repo
+* Modify the config.yml
+
+Run the main class: info.batey.cassandra.sstable.obfuscation.Main
+
+The config.yml must be in the directory where you run it from.
