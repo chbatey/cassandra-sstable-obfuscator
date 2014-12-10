@@ -5,6 +5,7 @@ A tool for taking Raw SS Tables (not snappy compressed) and obfuscating text fie
 **Very limited functionality so far**
 
 * Only works for tables without clustering columns
+* Can't obfuscate primary key
 * All fields must be text
 
 Example configuration:
