@@ -11,6 +11,8 @@ import org.apache.cassandra.io.sstable.SSTableIdentityIterator;
 import org.apache.cassandra.io.sstable.SSTableScanner;
 import org.apache.cassandra.serializers.UTF8Serializer;
 import org.apache.cassandra.utils.ByteBufferUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -19,6 +21,9 @@ import java.util.List;
 import java.util.Map;
 
 public class SSTableObfuscator {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SSTableObfuscator.class);
+
     private Map<String, String> columnToObfuscate;
 
     public SSTableObfuscator(Map<String, String> columnToObfuscate) {
@@ -35,7 +40,7 @@ public class SSTableObfuscator {
             SSTableIdentityIterator row = (SSTableIdentityIterator) scanner.next();
             DecoratedKey key = row.getKey();
             String keyValue = new String(ByteBufferUtil.getArray(key.getKey()));
-            System.out.println("Key: " + key + " row " + rowCount++ + " key value " + keyValue);
+            LOGGER.debug("Key: " + key + " row " + rowCount++ + " key value " + keyValue);
             List<Object> cqlCols = new ArrayList<>();
             cqlCols.add(keyValue);
 
@@ -52,10 +57,10 @@ public class SSTableObfuscator {
                     Class<?> obfuscationClass = Class.forName(obfuscationStrategy);
                     ObfuscationStrategy obfuscationStrategyInstance = (ObfuscationStrategy) obfuscationClass.newInstance();
                     Object obfuscatedValue = obfuscationStrategyInstance.obfuscate(valueAsString);
-                    System.out.println("Value to obfuscate: " + valueAsString + " to: " + obfuscationStrategy);
+                    LOGGER.debug("Value to obfuscate: {} to: {}", valueAsString, obfuscatedValue);
                     cqlCols.add(obfuscatedValue);
                 } else if (!cqlColumnName.toString().equals("")) {
-                    System.out.println("Value not obfuscating: " + valueAsString);
+                    LOGGER.debug("Value not obfuscating: {}");
                     cqlCols.add(valueAsString);
                 }
 

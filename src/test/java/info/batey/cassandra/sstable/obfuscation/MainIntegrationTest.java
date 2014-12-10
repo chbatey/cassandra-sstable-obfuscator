@@ -5,6 +5,8 @@ import junit.framework.TestCase;
 public class MainIntegrationTest extends TestCase {
 
     public static void main(String[] args) throws Exception {
-        new Main().runObfuscation("src/test/resources/config-many-text-cols.yml");
+        Main main = new Main();
+//        main.runObfuscation("src/test/resources/config-many-text-cols.yml");
+        main.runObfuscation("src/test/resources/config-key-value.yml");
     }
 }

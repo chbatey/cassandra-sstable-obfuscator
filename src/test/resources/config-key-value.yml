@@ -1,0 +1,13 @@
+schema:
+  newKeySpaceName: sstables_obfuscated
+  originalKeyspaceName: sstables
+  tableName: simple_key_value
+  schema: CREATE TABLE sstables_obfuscated.simple_key_value (key text, value text, PRIMARY KEY (key))
+  insertStatement: INSERT INTO sstables_obfuscated.simple_key_value (key, value ) VALUES ( ?, ? )
+  sstableGeneration: 7
+
+outputDirectory: output/
+inputDirectory: src/test/testdata/simple_key_value
+
+columnsToObfuscate:
+  value: info.batey.cassandra.sstable.obfuscation.obfuscation.MD5Obfuscator

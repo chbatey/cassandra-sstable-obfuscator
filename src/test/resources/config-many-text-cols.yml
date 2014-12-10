@@ -6,8 +6,8 @@ schema:
   insertStatement: INSERT INTO sstables_obfuscated.many_text_values (key, value1, value2, value3 ) VALUES ( ?, ?, ?, ?);
   sstableGeneration: 1
 
-outputDirectory: /Users/chbatey/dev/cassandra-examples/SSTableOffuscation/output/
-inputDirectory: /Users/chbatey/.ccm/local/node1/data/sstables/many_text_values-902a69c0808211e4a6bc2de2b6ea4379/snapshots/1418225912110
+outputDirectory: output/
+inputDirectory: src/test/testdata/many_text_cols
 
 columnsToObfuscate:
   value1: info.batey.cassandra.sstable.obfuscation.obfuscation.MD5Obfuscator
