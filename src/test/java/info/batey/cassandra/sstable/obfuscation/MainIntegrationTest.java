@@ -1,7 +1,9 @@
 package info.batey.cassandra.sstable.obfuscation;
 
 import junit.framework.TestCase;
+import org.junit.Ignore;
 
+@Ignore
 public class MainIntegrationTest extends TestCase {
 
     public static void main(String[] args) throws Exception {

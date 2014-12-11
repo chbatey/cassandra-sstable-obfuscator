@@ -43,6 +43,7 @@
             <groupId>com.fasterxml.jackson</groupId>
             <artifactId>jackson-parent</artifactId>
             <version>${jackson.version}</version>
+            <type>pom</type>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
