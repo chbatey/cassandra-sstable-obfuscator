@@ -1,0 +1,14 @@
+schema:
+  newKeySpaceName: sstables_obfuscated
+  originalKeyspaceName: sstables
+  tableName: text_and_clustering
+  schema:  create TABLE sstables_obfuscated.text_and_clustering(key text, value1 text , value2 text, value3 text, primary KEY (key, value1) );
+  insertStatement: INSERT INTO sstables_obfuscated.text_and_clustering (key, value1, value2, value3 ) VALUES ( ?, ?, ?, ?);
+  sstableGeneration: 1
+
+outputDirectory: output/
+inputDirectory: src/test/testdata/clustering_key
+
+columnsToObfuscate:
+  value1: info.batey.cassandra.sstable.obfuscation.obfuscation.MD5Obfuscator
+  value2: info.batey.cassandra.sstable.obfuscation.obfuscation.StupidObfuscationStrategy

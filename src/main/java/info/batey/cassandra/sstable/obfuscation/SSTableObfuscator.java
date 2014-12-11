@@ -36,6 +36,8 @@ public class SSTableObfuscator {
     public void mapSSTable(SSTableReaderFactory.CqlTableSSTableReader reader, CQLSSTableWriter writer) throws InvalidRequestException, IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         SSTableScanner scanner = reader.getScanner();
         int rowCount = 0;
+
+        // loop through the entire ss table
         while (scanner.hasNext()) {
             SSTableIdentityIterator row = (SSTableIdentityIterator) scanner.next();
             DecoratedKey key = row.getKey();
@@ -44,27 +46,46 @@ public class SSTableObfuscator {
             List<Object> cqlCols = new ArrayList<>();
             cqlCols.add(keyValue);
 
+            // loop through a single storage row
             while (row.hasNext()) {
 
                 BufferCell col = (BufferCell) row.next();
                 CompoundSparseCellName name = (CompoundSparseCellName) col.name();
                 ColumnIdentifier cqlColumnName = name.cql3ColumnName(reader.getCfMetaData());
-                System.out.println(cqlColumnName);
+                LOGGER.trace("Cqlcol name: |{}|", cqlColumnName);
                 ByteBuffer value = col.value();
                 String valueAsString = UTF8Serializer.instance.deserialize(value);
                 String obfuscationStrategy = columnToObfuscate.get(cqlColumnName.toString());
-                if (obfuscationStrategy != null) {
+
+                if (cqlColumnName.toString().equals("")) {
+                    LOGGER.debug("New CQL row");
+                    // todo save the last cql row
+                    if (cqlCols.size() > 1) {
+                        writer.addRow(cqlCols.toArray());
+
+                    }
+                    cqlCols = new ArrayList<>();
+                    cqlCols.add(keyValue);
+
+                    // add the clustering columns
+                    int numberOfClusteringColumns = name.clusteringSize();
+                    for (int i = 0; i < numberOfClusteringColumns; i++) {
+                        String clusteringColumnValue = UTF8Serializer.instance.deserialize(name.get(i));
+                        cqlCols.add(clusteringColumnValue);
+                    }
+                } else if (obfuscationStrategy != null) {
                     Class<?> obfuscationClass = Class.forName(obfuscationStrategy);
                     ObfuscationStrategy obfuscationStrategyInstance = (ObfuscationStrategy) obfuscationClass.newInstance();
                     Object obfuscatedValue = obfuscationStrategyInstance.obfuscate(valueAsString);
                     LOGGER.debug("Value to obfuscate: {} to: {}", valueAsString, obfuscatedValue);
                     cqlCols.add(obfuscatedValue);
-                } else if (!cqlColumnName.toString().equals("")) {
+                }  else {
                     LOGGER.debug("Value not obfuscating: {}");
                     cqlCols.add(valueAsString);
                 }
 
             }
+            // save the last cql row
             System.out.println("Adding row: " + cqlCols);
             writer.addRow(cqlCols.toArray());
         }
