@@ -5,10 +5,8 @@ import info.batey.cassandra.sstable.obfuscation.obfuscation.CellExtractor;
 import info.batey.cassandra.sstable.obfuscation.obfuscation.SSTableObfuscator;
 import info.batey.cassandra.sstable.obfuscation.reader.CqlTableSSTableReader;
 import org.apache.cassandra.config.CFMetaData;
-import org.apache.cassandra.db.ColumnFamilyType;
 import org.apache.cassandra.db.DecoratedKey;
 import org.apache.cassandra.db.OnDiskAtom;
-import org.apache.cassandra.db.composites.CompoundSparseCellNameType;
 import org.apache.cassandra.io.sstable.CQLSSTableWriter;
 import org.apache.cassandra.io.sstable.SSTableIdentityIterator;
 import org.apache.cassandra.io.sstable.SSTableScanner;
@@ -49,7 +47,7 @@ public class SSTableObfuscatorTest {
     @Mock
     private CellExtractor cellExtractor;
 
-    private CFMetaData cfMetaData = new CFMetaData("ks", "cf", ColumnFamilyType.Standard, new CompoundSparseCellNameType(Collections.emptyList()));
+    private CFMetaData cfMetaDataClusteringColumns = CFMetaData.compile("create TABLE ks.text_and_clustering(partitionKey text, cc1 text , cc2 text, value3 text, primary KEY (partitionKey, cc1, cc2) )", "ks");
 
     @Mock
     private OnDiskAtom cell;
@@ -61,7 +59,7 @@ public class SSTableObfuscatorTest {
         given(sstableScanner.next()).willReturn(row);
         given(row.getKey()).willReturn(rowKey);
         given(row.next()).willReturn(cell);
-        given(reader.getCfMetaData()).willReturn(cfMetaData);
+        given(reader.getCfMetaData()).willReturn(cfMetaDataClusteringColumns);
         // default to one row and one column
         given(sstableScanner.hasNext()).willReturn(true, false);
         given(row.hasNext()).willReturn(true, false);
@@ -76,7 +74,7 @@ public class SSTableObfuscatorTest {
         String clusteringKeyValue = "cc 1 value";
         CellExtractor.ClusteringColumn clusteringKey = new CellExtractor.ClusteringColumn("clustering key", clusteringKeyValue);
         CellExtractor.Cell myCell = new CellExtractor.Cell("", "", Lists.newArrayList(clusteringKey));
-        given(cellExtractor.extractCellFromRow(cell, cfMetaData)).willReturn(myCell);
+        given(cellExtractor.extractCellFromRow(cell, cfMetaDataClusteringColumns)).willReturn(myCell);
 
         //when
         underTest.mapSSTable(reader, writer);
@@ -93,7 +91,7 @@ public class SSTableObfuscatorTest {
         underTest = new SSTableObfuscator(obfuscation, cellExtractor);
         mockRowKeyValue(rowKey, "RowKeyOne");
         CellExtractor.Cell myCell = new CellExtractor.Cell("non-primary-key-col", "col value", Collections.emptyList());
-        given(cellExtractor.extractCellFromRow(cell, cfMetaData)).willReturn(myCell);
+        given(cellExtractor.extractCellFromRow(cell, cfMetaDataClusteringColumns)).willReturn(myCell);
 
         //when
         underTest.mapSSTable(reader, writer);
@@ -112,13 +110,30 @@ public class SSTableObfuscatorTest {
         String clusteringKeyValue = "cc 1 value";
         CellExtractor.ClusteringColumn clusteringKey = new CellExtractor.ClusteringColumn("clustering key", clusteringKeyValue);
         CellExtractor.Cell myCell = new CellExtractor.Cell("", "", Lists.newArrayList(clusteringKey));
-        given(cellExtractor.extractCellFromRow(cell, cfMetaData)).willReturn(myCell);
+        given(cellExtractor.extractCellFromRow(cell, cfMetaDataClusteringColumns)).willReturn(myCell);
 
         //when
         underTest.mapSSTable(reader, writer);
 
         //then
         verify(writer).addRow("RowKeyOne", clusteringKeyValue + " obfuscated");
+    }
+
+    @Test
+    public void obfuscatePartitionKey() throws Exception {
+        //given
+        Map<String, String> obfuscation = new HashMap<>();
+        obfuscation.put("partitionkey", "info.batey.cassandra.sstable.obfuscation.obfuscation.StupidObfuscationStrategy");
+        underTest = new SSTableObfuscator(obfuscation, cellExtractor);
+        mockRowKeyValue(rowKey, "RowKeyOne");
+        CellExtractor.Cell myCell = new CellExtractor.Cell("non-primary-key-col", "col value", Collections.emptyList());
+        given(cellExtractor.extractCellFromRow(cell, cfMetaDataClusteringColumns)).willReturn(myCell);
+
+        //when
+        underTest.mapSSTable(reader, writer);
+
+        //then
+        verify(writer).addRow("RowKeyOne obfuscated", "col value");
     }
 
     private void mockRowKeyValue(DecoratedKey rowKey, String value) {

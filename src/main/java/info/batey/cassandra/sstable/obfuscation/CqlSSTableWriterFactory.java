@@ -27,11 +27,9 @@ public class CqlSSTableWriterFactory {
             throw new RuntimeException("Can't create output directory " + outputDirectory);
         }
 
-        CQLSSTableWriter writer = CQLSSTableWriter.builder()
+        return CQLSSTableWriter.builder()
                 .inDirectory(outputDirectoryForFiles)
                 .forTable(schemaConfig.getSchema())
                 .using(schemaConfig.getInsertStatement()).build();
-
-        return writer;
     }
 }

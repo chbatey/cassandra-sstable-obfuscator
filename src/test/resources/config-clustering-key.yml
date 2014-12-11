@@ -12,3 +12,4 @@ inputDirectory: src/test/testdata/clustering_key
 columnsToObfuscate:
   value1: info.batey.cassandra.sstable.obfuscation.obfuscation.MD5Obfuscator
   value2: info.batey.cassandra.sstable.obfuscation.obfuscation.StupidObfuscationStrategy
+  key: info.batey.cassandra.sstable.obfuscation.obfuscation.StupidObfuscationStrategy

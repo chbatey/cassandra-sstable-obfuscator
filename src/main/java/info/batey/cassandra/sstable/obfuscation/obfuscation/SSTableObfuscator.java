@@ -3,6 +3,7 @@ package info.batey.cassandra.sstable.obfuscation.obfuscation;
 import info.batey.cassandra.sstable.obfuscation.obfuscation.CellExtractor;
 import info.batey.cassandra.sstable.obfuscation.reader.CqlTableSSTableReader;
 import org.apache.cassandra.config.CFMetaData;
+import org.apache.cassandra.config.ColumnDefinition;
 import org.apache.cassandra.db.DecoratedKey;
 import org.apache.cassandra.db.OnDiskAtom;
 import org.apache.cassandra.exceptions.InvalidRequestException;
@@ -36,13 +37,19 @@ public class SSTableObfuscator {
     public void mapSSTable(CqlTableSSTableReader reader, CQLSSTableWriter writer) throws InvalidRequestException, IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         SSTableScanner scanner = reader.getScanner();
         CFMetaData cfMetaData = reader.getCfMetaData();
+        ColumnDefinition partitionKey = cfMetaData.partitionKeyColumns().get(0);
         int rowCount = 0;
 
         // loop through the entire ss table
         while (scanner.hasNext()) {
             SSTableIdentityIterator row = (SSTableIdentityIterator) scanner.next();
             DecoratedKey key = row.getKey();
-            String keyValue = new String(ByteBufferUtil.getArray(key.getKey()));
+
+            Object keyValue = new String(ByteBufferUtil.getArray(key.getKey()));
+            String obfuscationStrategyForPartitionKey = columnToObfuscate.get(partitionKey.name.toString());
+            if (obfuscationStrategyForPartitionKey != null) {
+                keyValue = obfuscateValue(keyValue, obfuscationStrategyForPartitionKey);
+            }
 
             LOGGER.debug("Key: " + key + " row " + rowCount++ + " key value " + keyValue);
             List<Object> cqlCols = new ArrayList<>();
