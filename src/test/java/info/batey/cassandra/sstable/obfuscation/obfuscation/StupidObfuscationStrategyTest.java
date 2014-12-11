@@ -1,7 +1,16 @@
 package info.batey.cassandra.sstable.obfuscation.obfuscation;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class StupidObfuscationStrategyTest extends TestCase {
+import static org.junit.Assert.assertEquals;
 
+public class StupidObfuscationStrategyTest {
+    @Test
+    public void addsObfuscated() throws Exception {
+        StupidObfuscationStrategy obfuscator = new StupidObfuscationStrategy();
+
+        Object obfuscatedValue = obfuscator.obfuscate("hello");
+
+        assertEquals("hello obfuscated", obfuscatedValue);
+    }
 }
