@@ -1,5 +1,3 @@
-package info.batey.cassandra.sstable.obfuscation;
-
 import org.apache.cassandra.exceptions.InvalidRequestException;
 import org.apache.cassandra.io.sstable.CQLSSTableWriter;
 
