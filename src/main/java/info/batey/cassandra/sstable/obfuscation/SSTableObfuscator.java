@@ -1,21 +1,18 @@
 package info.batey.cassandra.sstable.obfuscation;
 
 import info.batey.cassandra.sstable.obfuscation.obfuscation.ObfuscationStrategy;
-import org.apache.cassandra.cql3.ColumnIdentifier;
-import org.apache.cassandra.db.BufferCell;
+import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.db.DecoratedKey;
-import org.apache.cassandra.db.composites.CompoundSparseCellName;
+import org.apache.cassandra.db.OnDiskAtom;
 import org.apache.cassandra.exceptions.InvalidRequestException;
 import org.apache.cassandra.io.sstable.CQLSSTableWriter;
 import org.apache.cassandra.io.sstable.SSTableIdentityIterator;
 import org.apache.cassandra.io.sstable.SSTableScanner;
-import org.apache.cassandra.serializers.UTF8Serializer;
 import org.apache.cassandra.utils.ByteBufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,15 +22,17 @@ public class SSTableObfuscator {
     private static final Logger LOGGER = LoggerFactory.getLogger(SSTableObfuscator.class);
 
     private Map<String, String> columnToObfuscate;
+    private CellExtractor cellExtractor;
 
-    public SSTableObfuscator(Map<String, String> columnToObfuscate) {
+    public SSTableObfuscator(Map<String, String> columnToObfuscate, CellExtractor cellExtractor) {
         this.columnToObfuscate = columnToObfuscate;
+        this.cellExtractor = cellExtractor;
     }
 
     /**
      * Streams the new SS table to disk.
      */
-    public void mapSSTable(SSTableReaderFactory.CqlTableSSTableReader reader, CQLSSTableWriter writer) throws InvalidRequestException, IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+    public void mapSSTable(CqlTableSSTableReader reader, CQLSSTableWriter writer) throws InvalidRequestException, IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         SSTableScanner scanner = reader.getScanner();
         int rowCount = 0;
 
@@ -49,15 +48,12 @@ public class SSTableObfuscator {
             // loop through a single storage row
             while (row.hasNext()) {
 
-                BufferCell col = (BufferCell) row.next();
-                CompoundSparseCellName name = (CompoundSparseCellName) col.name();
-                ColumnIdentifier cqlColumnName = name.cql3ColumnName(reader.getCfMetaData());
-                LOGGER.trace("Cqlcol name: |{}|", cqlColumnName);
-                ByteBuffer value = col.value();
-                String valueAsString = UTF8Serializer.instance.deserialize(value);
-                String obfuscationStrategy = columnToObfuscate.get(cqlColumnName.toString());
+                OnDiskAtom next = row.next();
+                CFMetaData cfMetaData = reader.getCfMetaData();
+                CellExtractor.Cell cell = cellExtractor.extractCellFromRow(next, cfMetaData);
+                String obfuscationStrategy = columnToObfuscate.get(cell.getCqlColumnName());
 
-                if (cqlColumnName.toString().equals("")) {
+                if (cell.getCqlColumnName().equals("")) {
                     LOGGER.debug("New CQL row");
                     // todo save the last cql row
                     if (cqlCols.size() > 1) {
@@ -68,25 +64,24 @@ public class SSTableObfuscator {
                     cqlCols.add(keyValue);
 
                     // add the clustering columns
-                    int numberOfClusteringColumns = name.clusteringSize();
-                    for (int i = 0; i < numberOfClusteringColumns; i++) {
-                        String clusteringColumnValue = UTF8Serializer.instance.deserialize(name.get(i));
-                        cqlCols.add(clusteringColumnValue);
+                    List<CellExtractor.ClusteringColumn> clusteringColumns = cell.getClusteringColumns();
+                    for (CellExtractor.ClusteringColumn clusteringColumn : clusteringColumns) {
+                        cqlCols.add(clusteringColumn.getValue());
                     }
                 } else if (obfuscationStrategy != null) {
                     Class<?> obfuscationClass = Class.forName(obfuscationStrategy);
                     ObfuscationStrategy obfuscationStrategyInstance = (ObfuscationStrategy) obfuscationClass.newInstance();
-                    Object obfuscatedValue = obfuscationStrategyInstance.obfuscate(valueAsString);
-                    LOGGER.debug("Value to obfuscate: {} to: {}", valueAsString, obfuscatedValue);
+                    Object obfuscatedValue = obfuscationStrategyInstance.obfuscate(cell.getValue());
+                    LOGGER.debug("Value to obfuscate: {} to: {}", cell.getValue(), obfuscatedValue);
                     cqlCols.add(obfuscatedValue);
                 }  else {
                     LOGGER.debug("Value not obfuscating: {}");
-                    cqlCols.add(valueAsString);
+                    cqlCols.add(cell.getValue());
                 }
 
             }
             // save the last cql row
-            System.out.println("Adding row: " + cqlCols);
+            LOGGER.debug("Adding row: {}", cqlCols);
             writer.addRow(cqlCols.toArray());
         }
 

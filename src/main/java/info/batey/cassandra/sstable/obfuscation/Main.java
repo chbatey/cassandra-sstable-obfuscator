@@ -22,9 +22,9 @@ public class Main {
         SSTableReaderFactory ssTableReaderFactory = new SSTableReaderFactory();
 
         CQLSSTableWriter writer = cqlSSTableWriterFactory.createWriter(configuration.getOutputDirectory(), configuration.getSchema());
-        SSTableReaderFactory.CqlTableSSTableReader reader = ssTableReaderFactory.sstableReader(configuration.getInputDirectory(), configuration.getSchema());
+        CqlTableSSTableReader reader = ssTableReaderFactory.sstableReader(configuration.getInputDirectory(), configuration.getSchema());
 
-        SSTableObfuscator ssTableMapper = new SSTableObfuscator(configuration.getColumnsToObfuscate());
+        SSTableObfuscator ssTableMapper = new SSTableObfuscator(configuration.getColumnsToObfuscate(), new CellExtractor());
         ssTableMapper.mapSSTable(reader, writer);
 
     }
