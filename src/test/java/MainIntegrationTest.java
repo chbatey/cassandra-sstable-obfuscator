@@ -1,5 +1,4 @@
-package info.batey.cassandra.sstable.obfuscation;
-
+import info.batey.cassandra.sstable.obfuscation.Main;
 import junit.framework.TestCase;
 import org.junit.Ignore;
 
