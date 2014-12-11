@@ -6,7 +6,7 @@ Works for Cassandra 2.1 SS tables. I will add support for other versions if requ
 
 **Very limited functionality so far**
 
-* Can't obfuscate primary key
+* Can't obfuscate partition key
 * All fields must be text
 
 Example configuration:

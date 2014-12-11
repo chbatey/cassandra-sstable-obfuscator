@@ -1,4 +1,4 @@
-package info.batey.cassandra.sstable.obfuscation;
+package info.batey.cassandra.sstable.obfuscation.reader;
 
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.io.sstable.SSTableReader;

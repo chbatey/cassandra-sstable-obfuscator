@@ -1,4 +1,4 @@
-package info.batey.cassandra.sstable.obfuscation;
+package info.batey.cassandra.sstable.obfuscation.reader;
 
 import info.batey.cassandra.sstable.obfuscation.config.SchemaConfig;
 import org.apache.cassandra.config.CFMetaData;
@@ -40,7 +40,7 @@ public class SSTableReaderFactory {
             cfMetaData = schemaObject.left.getCFMetaData().rebuild();
             LOGGER.debug("CF meta data: {}", cfMetaData);
         } catch (RequestValidationException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Probably invalid insert or table CQL", e);
         }
 
         return new CqlTableSSTableReader(SSTableReader.open(descriptor, cfMetaData), cfMetaData);

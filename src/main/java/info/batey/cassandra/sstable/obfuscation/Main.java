@@ -3,6 +3,10 @@ package info.batey.cassandra.sstable.obfuscation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import info.batey.cassandra.sstable.obfuscation.config.Configuration;
+import info.batey.cassandra.sstable.obfuscation.obfuscation.CellExtractor;
+import info.batey.cassandra.sstable.obfuscation.obfuscation.SSTableObfuscator;
+import info.batey.cassandra.sstable.obfuscation.reader.CqlTableSSTableReader;
+import info.batey.cassandra.sstable.obfuscation.reader.SSTableReaderFactory;
 import org.apache.cassandra.exceptions.InvalidRequestException;
 import org.apache.cassandra.io.sstable.CQLSSTableWriter;
 

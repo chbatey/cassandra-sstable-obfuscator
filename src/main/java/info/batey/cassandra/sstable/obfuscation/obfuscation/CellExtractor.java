@@ -1,6 +1,7 @@
-package info.batey.cassandra.sstable.obfuscation;
+package info.batey.cassandra.sstable.obfuscation.obfuscation;
 
 import org.apache.cassandra.config.CFMetaData;
+import org.apache.cassandra.config.ColumnDefinition;
 import org.apache.cassandra.cql3.ColumnIdentifier;
 import org.apache.cassandra.db.BufferCell;
 import org.apache.cassandra.db.OnDiskAtom;
@@ -26,11 +27,15 @@ public class CellExtractor {
         String valueAsString = UTF8Serializer.instance.deserialize(value);
 
 
+        List<ColumnDefinition> columnDefinitions = cfMetaData.clusteringColumns();
+
         int numberOfClusteringColumns = name.clusteringSize();
         List<ClusteringColumn> clusteringColumns = new ArrayList<>();
         for (int i = 0; i < numberOfClusteringColumns; i++) {
+
             String clusteringColumnValue = UTF8Serializer.instance.deserialize(name.get(i));
-            clusteringColumns.add(new ClusteringColumn(null, clusteringColumnValue));
+            String clusteringColumnName = columnDefinitions.get(i).name.toString();
+            clusteringColumns.add(new ClusteringColumn(clusteringColumnName, clusteringColumnValue));
         }
 
         return new Cell(cqlColumnName.toString(), valueAsString, clusteringColumns);

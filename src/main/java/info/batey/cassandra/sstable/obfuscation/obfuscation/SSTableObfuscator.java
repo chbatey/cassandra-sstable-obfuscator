@@ -1,6 +1,7 @@
-package info.batey.cassandra.sstable.obfuscation;
+package info.batey.cassandra.sstable.obfuscation.obfuscation;
 
-import info.batey.cassandra.sstable.obfuscation.obfuscation.ObfuscationStrategy;
+import info.batey.cassandra.sstable.obfuscation.obfuscation.CellExtractor;
+import info.batey.cassandra.sstable.obfuscation.reader.CqlTableSSTableReader;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.db.DecoratedKey;
 import org.apache.cassandra.db.OnDiskAtom;
@@ -34,6 +35,7 @@ public class SSTableObfuscator {
      */
     public void mapSSTable(CqlTableSSTableReader reader, CQLSSTableWriter writer) throws InvalidRequestException, IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         SSTableScanner scanner = reader.getScanner();
+        CFMetaData cfMetaData = reader.getCfMetaData();
         int rowCount = 0;
 
         // loop through the entire ss table
@@ -41,6 +43,7 @@ public class SSTableObfuscator {
             SSTableIdentityIterator row = (SSTableIdentityIterator) scanner.next();
             DecoratedKey key = row.getKey();
             String keyValue = new String(ByteBufferUtil.getArray(key.getKey()));
+
             LOGGER.debug("Key: " + key + " row " + rowCount++ + " key value " + keyValue);
             List<Object> cqlCols = new ArrayList<>();
             cqlCols.add(keyValue);
@@ -49,12 +52,11 @@ public class SSTableObfuscator {
             while (row.hasNext()) {
 
                 OnDiskAtom next = row.next();
-                CFMetaData cfMetaData = reader.getCfMetaData();
                 CellExtractor.Cell cell = cellExtractor.extractCellFromRow(next, cfMetaData);
                 String obfuscationStrategy = columnToObfuscate.get(cell.getCqlColumnName());
 
                 if (cell.getCqlColumnName().equals("")) {
-                    LOGGER.debug("New CQL row");
+                    LOGGER.debug("New CQL row: {}", keyValue);
                     // todo save the last cql row
                     if (cqlCols.size() > 1) {
                         writer.addRow(cqlCols.toArray());
@@ -66,16 +68,22 @@ public class SSTableObfuscator {
                     // add the clustering columns
                     List<CellExtractor.ClusteringColumn> clusteringColumns = cell.getClusteringColumns();
                     for (CellExtractor.ClusteringColumn clusteringColumn : clusteringColumns) {
-                        cqlCols.add(clusteringColumn.getValue());
+                        String obfuscateForClusteringKey = columnToObfuscate.get(clusteringColumn.getName());
+                        if (obfuscateForClusteringKey != null) {
+                            Object obfuscatedValue = obfuscateValue(clusteringColumn.getValue(), obfuscateForClusteringKey);
+                            LOGGER.debug("Obfuscating clustering key {} to {}", clusteringColumn.getValue(), obfuscatedValue);
+                            cqlCols.add(obfuscatedValue);
+                        } else {
+                            LOGGER.debug("Not obfuscating clustering key {}", clusteringColumn.getValue());
+                            cqlCols.add(clusteringColumn.getValue());
+                        }
                     }
                 } else if (obfuscationStrategy != null) {
-                    Class<?> obfuscationClass = Class.forName(obfuscationStrategy);
-                    ObfuscationStrategy obfuscationStrategyInstance = (ObfuscationStrategy) obfuscationClass.newInstance();
-                    Object obfuscatedValue = obfuscationStrategyInstance.obfuscate(cell.getValue());
+                    Object obfuscatedValue = obfuscateValue(cell.getValue(), obfuscationStrategy);
                     LOGGER.debug("Value to obfuscate: {} to: {}", cell.getValue(), obfuscatedValue);
                     cqlCols.add(obfuscatedValue);
-                }  else {
-                    LOGGER.debug("Value not obfuscating: {}");
+                } else {
+                    LOGGER.debug("Value not obfuscating: {}", cell.getValue());
                     cqlCols.add(cell.getValue());
                 }
 
@@ -86,5 +94,11 @@ public class SSTableObfuscator {
         }
 
         writer.close();
+    }
+
+    private Object obfuscateValue(Object originalValue, String obfuscationStrategy) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+        Class<?> obfuscationClass = Class.forName(obfuscationStrategy);
+        ObfuscationStrategy obfuscationStrategyInstance = (ObfuscationStrategy) obfuscationClass.newInstance();
+        return obfuscationStrategyInstance.obfuscate(originalValue);
     }
 }
