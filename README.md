@@ -1,5 +1,7 @@
 # SSTable Obfuscator
 
+![TravisCI](https://travis-ci.org/chbatey/cassandra-sstable-obfuscator.svg?branch=master)
+
 A tool for taking Raw SS Tables (not snappy compressed) and obfuscating text fields.
 
 Works for Cassandra 2.1 SS tables. I will add support for other versions if requested.
