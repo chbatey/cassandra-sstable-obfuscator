@@ -10,6 +10,7 @@ Works for Cassandra 2.1 SS tables. I will add support for other versions if requ
 
 * Only a single column as partition key
 * All fields must be text
+* No support for static columns
 
 Example configuration:
 
