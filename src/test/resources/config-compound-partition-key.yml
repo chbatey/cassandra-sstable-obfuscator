@@ -1,0 +1,15 @@
+schema:
+  newKeySpaceName: sstables_obfuscated
+  originalKeyspaceName: sstables
+  tableName: compound_primary_key
+  schema:  CREATE TABLE sstables_obfuscated.compound_primary_key(key1 text , key2 text, cc1 text, cc2 text, val1 text, primary key ((key1, key2), cc1, cc2));
+  insertStatement: insert into sstables_obfuscated.compound_primary_key (key1, key2 , cc1, cc2 , val1 ) values (?, ?, ?, ?, ?)
+  sstableGeneration: 1
+
+outputDirectory: output/
+inputDirectory: src/test/testdata/compound_partition_key
+
+columnsToObfuscate:
+#  key1: info.batey.cassandra.sstable.obfuscation.obfuscation.MD5Obfuscator
+  cc1: info.batey.cassandra.sstable.obfuscation.obfuscation.StupidObfuscationStrategy
+  val1: info.batey.cassandra.sstable.obfuscation.obfuscation.StupidObfuscationStrategy
